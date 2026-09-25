@@ -18,9 +18,30 @@ function getExtensionAPI(): any {
   return null;
 }
 
-const isStorageAvailable = (): boolean => {
-  return getExtensionAPI() !== null;
-};
+/**
+ * Sanitize text against CSV Formula Injection (=, +, -, @, tab, cr).
+ */
+function sanitizeCSVCell(value: string): string {
+  if (!value) return '""';
+  let str = String(value).replace(/"/g, '""');
+  // Prevent CSV Formula Injection
+  if (/^[=+\-@\t\r]/.test(str)) {
+    str = `'${str}`;
+  }
+  return `"${str}"`;
+}
+
+/**
+ * Safely parse JSON string with fallback.
+ */
+function safeJSONParse<T>(jsonString: string | null, fallback: T): T {
+  if (!jsonString) return fallback;
+  try {
+    return JSON.parse(jsonString) as T;
+  } catch {
+    return fallback;
+  }
+}
 
 /**
  * Fetch all saved reconnaissance records.
@@ -32,11 +53,9 @@ export async function getRecords(): Promise<ReconRecord[]> {
       try {
         const result = api.storage.local.get([STORAGE_KEYS.RECORDS]);
         if (result && typeof result.then === 'function') {
-          // Promise-based API (Firefox browser.storage)
           result.then((res: any) => resolve(res[STORAGE_KEYS.RECORDS] || []))
                 .catch(() => resolve([]));
         } else {
-          // Callback-based API (Chrome chrome.storage)
           api.storage.local.get([STORAGE_KEYS.RECORDS], (res: any) => {
             resolve(res ? res[STORAGE_KEYS.RECORDS] || [] : []);
           });
@@ -48,7 +67,7 @@ export async function getRecords(): Promise<ReconRecord[]> {
   } else {
     // Fallback to localStorage for dev preview
     const data = localStorage.getItem(STORAGE_KEYS.RECORDS);
-    return data ? JSON.parse(data) : [];
+    return safeJSONParse<ReconRecord[]>(data, []);
   }
 }
 
@@ -75,10 +94,14 @@ export async function saveRecord(record: ReconRecord): Promise<ReconRecord[]> {
       }
     });
   } else {
-    localStorage.setItem(STORAGE_KEYS.RECORDS, JSON.stringify(updated));
+    try {
+      localStorage.setItem(STORAGE_KEYS.RECORDS, JSON.stringify(updated));
+    } catch {
+      // Storage quota exceeded fallback
+    }
   }
 
-  // Also sync note for this domain
+  // Sync note for domain
   if (record.domain && record.notes) {
     await saveDomainNote(record.domain, record.notes, record.pinned || false);
   }
@@ -160,7 +183,7 @@ export async function getDomainNotes(): Promise<Record<string, DomainNote>> {
     });
   } else {
     const data = localStorage.getItem(STORAGE_KEYS.NOTES);
-    return data ? JSON.parse(data) : {};
+    return safeJSONParse<Record<string, DomainNote>>(data, {});
   }
 }
 
@@ -195,7 +218,11 @@ export async function saveDomainNote(domain: string, notes: string, pinned = fal
       }
     });
   } else {
-    localStorage.setItem(STORAGE_KEYS.NOTES, JSON.stringify(notesMap));
+    try {
+      localStorage.setItem(STORAGE_KEYS.NOTES, JSON.stringify(notesMap));
+    } catch {
+      // Storage quota fallback
+    }
   }
 
   return notesMap;
@@ -246,20 +273,20 @@ export function exportAsJSON(records: ReconRecord[]) {
 }
 
 /**
- * Export records as CSV file.
+ * Export records as CSV file with formula injection protection.
  */
 export function exportAsCSV(records: ReconRecord[]) {
   if (records.length === 0) return;
 
   const headers = ['Domain', 'URL', 'Title', 'Meta Description', 'Technologies', 'Notes', 'Timestamp'];
   const rows = records.map(r => [
-    `"${(r.domain || '').replace(/"/g, '""')}"`,
-    `"${(r.url || '').replace(/"/g, '""')}"`,
-    `"${(r.title || '').replace(/"/g, '""')}"`,
-    `"${(r.description || '').replace(/"/g, '""')}"`,
-    `"${(r.technologies || []).join('; ').replace(/"/g, '""')}"`,
-    `"${(r.notes || '').replace(/"/g, '""')}"`,
-    `"${r.timestamp || ''}"`
+    sanitizeCSVCell(r.domain || ''),
+    sanitizeCSVCell(r.url || ''),
+    sanitizeCSVCell(r.title || ''),
+    sanitizeCSVCell(r.description || ''),
+    sanitizeCSVCell((r.technologies || []).join('; ')),
+    sanitizeCSVCell(r.notes || ''),
+    sanitizeCSVCell(r.timestamp || '')
   ]);
 
   const csvContent = [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
@@ -281,7 +308,20 @@ export function downloadNoteAsTXT(domain: string, notes: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `${domain}_notes.txt`;
+  a.download = `${domain.replace(/[^a-zA-Z0-9._-]/g, '_')}_notes.txt`;
   a.click();
   URL.revokeObjectURL(url);
+}
+
+/**
+ * Sanitize URL to ensure it starts with http:// or https:// before opening.
+ */
+export function isSafeURL(url: string): boolean {
+  if (!url) return false;
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
 }

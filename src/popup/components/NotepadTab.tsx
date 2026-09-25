@@ -31,6 +31,13 @@ export const NotepadTab: React.FC<NotepadTabProps> = ({ initialDomain }) => {
 
   useEffect(() => {
     loadNotes();
+
+    return () => {
+      // Cleanup timer on unmount to prevent memory leaks
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+      }
+    };
   }, []);
 
   const loadNotes = async () => {

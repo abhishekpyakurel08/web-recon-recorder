@@ -2,25 +2,32 @@ import { detectTechnologies } from '../utils/detector';
 import { WebPageMeta } from '../types/recon';
 
 function getPageInformation(): WebPageMeta {
-  const url = window.location.href;
-  const domain = window.location.hostname;
-  const title = document.title || domain;
+  const rawUrl = window.location.href;
+  const rawDomain = window.location.hostname;
+  
+  // Truncate title to max 300 chars to avoid storage memory bloat
+  const title = (document.title || rawDomain).slice(0, 300);
 
-  // Extract meta description
+  // Extract meta description and cap at 1000 chars
   let description = '';
   const metaDesc = document.querySelector('meta[name="description"]') ||
                    document.querySelector('meta[property="og:description"]') ||
                    document.querySelector('meta[name="twitter:description"]');
   if (metaDesc) {
-    description = metaDesc.getAttribute('content') || '';
+    description = (metaDesc.getAttribute('content') || '').slice(0, 1000);
   }
 
-  // Detect technologies
-  const technologies = detectTechnologies(document);
+  // Detect technologies safely
+  let technologies: string[] = [];
+  try {
+    technologies = detectTechnologies(document);
+  } catch {
+    technologies = [];
+  }
 
   return {
-    url,
-    domain,
+    url: rawUrl,
+    domain: rawDomain,
     title,
     description: description.trim(),
     technologies,
