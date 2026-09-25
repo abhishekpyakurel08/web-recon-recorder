@@ -2,6 +2,8 @@
 
 A powerful cross-browser extension for **Firefox**, **Chrome**, and **Edge** built with **React**, **TypeScript**, **Vite**, and **Manifest V3** for recording reconnaissance metadata about websites during security research, bug bounty workflows, or technical documentation. Includes a domain-aware built-in Notepad with auto-save, search, pinning, and exports.
 
+Can also be deployed directly to **Vercel** as a live interactive web app demo!
+
 ![Web Recon Recorder](public/icons/icon128.png)
 
 ---
@@ -10,7 +12,7 @@ A powerful cross-browser extension for **Firefox**, **Chrome**, and **Edge** bui
 
 - **Automated Website Reconnaissance**:
   - Detect current URL, domain name, page title, and meta description.
-  - Detect technology stacks in real time (React, Next.js, Vue.js, Nuxt.js, Angular, Svelte, WordPress, Shopify, Tailwind CSS, Bootstrap, jQuery, Vite, Google Analytics, Font Awesome).
+  - Detect technology stacks in real time (React, Next.js, Vercel, Vue.js, Nuxt.js, Angular, Svelte, WordPress, Shopify, Tailwind CSS, Bootstrap, jQuery, Vite, Google Analytics, Font Awesome).
   - Capture visible tab screenshots.
   - Automatic timestamping of website visit records.
 
@@ -31,53 +33,54 @@ A powerful cross-browser extension for **Firefox**, **Chrome**, and **Edge** bui
   - Export records as **JSON** or **CSV**.
   - Delete individual records or clear entire history.
 
-- **Cross-Browser Compatibility**:
+- **Cross-Browser & Vercel Hosting**:
   - Full Manifest V3 support for **Mozilla Firefox**, **Google Chrome**, and **Microsoft Edge**.
-  - Polyfilled cross-browser WebExtension storage and messaging wrappers.
+  - Single-click deployment support for **Vercel** via `vercel.json` and Vite `index.html`.
 
 ---
 
-## 🛠️ Installation & Building
+## 🔺 Deploying to Vercel
+
+### Option 1: Vercel CLI
+```bash
+npm install -g vercel
+vercel
+```
+
+### Option 2: Vercel Dashboard / Git
+1. Push this repository to GitHub or GitLab.
+2. Go to [Vercel Dashboard](https://vercel.com/new).
+3. Import the repository. Vercel automatically detects the `vite` framework and `vercel.json`.
+4. Click **Deploy**.
+
+---
+
+## 🛠️ Local Development & Building
 
 ### 1. Install Dependencies
 ```bash
 npm install
 ```
 
-### 2. Build Extension
+### 2. Build Project
 ```bash
 npm run build
 ```
-This compiles TypeScript and bundles all assets into the `dist/` directory.
+This outputs `dist/index.html` (for Vercel deployment) and extension files (`manifest.json`, `popup.html`, `background.js`, `content.js`).
 
 ---
 
-## 🌐 Loading into Firefox, Chrome & Edge
+## 🌐 Loading into Browsers (Unpacked Extension)
 
 ### 🦊 Mozilla Firefox:
-1. Open Firefox and navigate to `about:debugging#/runtime/this-firefox`.
+1. Navigate to `about:debugging#/runtime/this-firefox`.
 2. Click **Load Temporary Add-on...**.
-3. Select `dist/manifest.json` inside this repository.
+3. Select `dist/manifest.json`.
 
-### 🌐 Google Chrome:
-1. Open Chrome and navigate to `chrome://extensions`.
-2. Enable **Developer mode** toggle in the top-right corner.
-3. Click **Load unpacked**.
-4. Select the `dist/` folder inside this repository.
-
-### 🌊 Microsoft Edge:
-1. Open Edge and navigate to `edge://extensions`.
-2. Enable **Developer mode** toggle on the left sidebar.
-3. Click **Load unpacked**.
-4. Select the `dist/` folder inside this repository.
-
----
-
-## 📝 Usage Guide
-
-1. **Recon Tab**: Click the extension icon on any active tab. Click **Save Recon Record** to capture metadata, detected technologies, screenshot, and current note.
-2. **Notepad Tab**: Write domain-specific notes. Notes auto-save continuously while typing. Toggle between Edit mode and Markdown preview mode.
-3. **History Tab**: View past website scans, filter by technology stack, view full detail modals, and click **JSON** or **CSV** to export your recon data.
+### 🌐 Google Chrome / 🌊 Microsoft Edge:
+1. Navigate to `chrome://extensions` or `edge://extensions`.
+2. Enable **Developer Mode**.
+3. Click **Load unpacked** and select the `dist/` directory.
 
 ---
 

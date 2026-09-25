@@ -20,6 +20,19 @@ export const TECH_RULES: TechRule[] = [
     }
   },
   {
+    name: 'Vercel',
+    category: 'Infrastructure',
+    match: (doc) => {
+      return !!doc.querySelector('script[src*="vercel"]') ||
+             !!doc.querySelector('link[href*="vercel"]') ||
+             !!doc.querySelector('[data-vercel-edit-info]') ||
+             Array.from(doc.querySelectorAll<HTMLScriptElement>('script')).some(s => 
+               (s.src && s.src.includes('vercel')) ||
+               (s.textContent && s.textContent.includes('vercel'))
+             );
+    }
+  },
+  {
     name: 'React',
     category: 'Frontend Framework',
     match: (doc) => {
